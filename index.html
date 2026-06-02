@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>bergamot 仕入入力</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #f5f5f5;
+    color: #1a1a1a;
+    font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+  }
+
+  header {
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 14px 20px;
+    text-align: center;
+  }
+
+  header h1 {
+    font-size: 18px;
+    color: #333;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+
+  .step-indicator {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px 20px;
+    background: #fff;
+    border-bottom: 1px solid #ececec;
+  }
+
+  .step-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #ddd;
+    transition: background 0.3s;
+  }
+
+  .step-dot.active { background: #555; }
+  .step-dot.done { background: #aaa; }
+
+  .container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 24px 16px 120px;
+  }
+
+  .step { display: none; }
+  .step.active { display: block; }
+
+  .step-title {
+    font-size: 11px;
+    color: #999;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .step-label {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111;
+    margin-bottom: 24px;
+  }
+
+  .btn-grid {
+    display: grid;
+    gap: 10px;
+  }
+
+  .btn-grid.col2 { grid-template-columns: 1fr 1fr; }
+  .btn-grid.col3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  .choice-btn {
+    background: #fff;
+    border: 1.5px solid #ddd;
+    border-radius: 10px;
+    color: #222;
+    font-size: 17px;
+    font-weight: 600;
+    padding: 20px 12px;
+    min-height: 72px;
+    cursor: pointer;
+    transition: all 0.12s;
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .choice-btn:active, .choice-btn:hover {
+    border-color: #555;
+    background: #f0f0f0;
+    color: #111;
+  }
+
+  .product-btn {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    color: #333;
+    font-size: 14px;
+    padding: 14px 12px;
+    min-height: 52px;
+    cursor: pointer;
+    transition: all 0.12s;
+    text-align: left;
+    line-height: 1.4;
+    width: 100%;
+  }
+
+  .product-btn:active, .product-btn:hover {
+    border-color: #999;
+    background: #f5f5f5;
+  }
+
+  .product-list { display: grid; gap: 6px; }
+
+  .form-group { margin-bottom: 16px; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 6px;
+    letter-spacing: 0.03em;
+  }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  select {
+    width: 100%;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    color: #111;
+    font-size: 16px;
+    padding: 14px 12px;
+    min-height: 52px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  input:focus, select:focus {
+    outline: none;
+    border-color: #555;
+  }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23999' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+  }
+
+  .total-display {
+    background: #fff;
+    border: 1.5px solid #ccc;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .total-display span {
+    display: block;
+    font-size: 11px;
+    color: #999;
+    margin-bottom: 4px;
+  }
+
+  .total-display strong {
+    font-size: 28px;
+    color: #111;
+    font-weight: 700;
+  }
+
+  .confirm-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+  }
+
+  .confirm-table tr { border-bottom: 1px solid #ececec; }
+
+  .confirm-table th {
+    text-align: left;
+    font-size: 12px;
+    color: #999;
+    padding: 10px 4px;
+    width: 40%;
+    font-weight: normal;
+  }
+
+  .confirm-table td {
+    font-size: 15px;
+    color: #111;
+    padding: 10px 4px;
+    font-weight: 600;
+    word-break: break-all;
+  }
+
+  .btn-primary {
+    display: block;
+    width: 100%;
+    background: #222;
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 17px;
+    font-weight: 700;
+    padding: 18px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    min-height: 60px;
+  }
+
+  .btn-primary:active { opacity: 0.7; }
+
+  .btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    color: #888;
+    font-size: 14px;
+    padding: 10px 16px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    min-height: 48px;
+  }
+
+  .btn-back:active { color: #333; border-color: #aaa; }
+
+  .records-section {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0 16px 60px;
+  }
+
+  .records-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0 12px;
+    border-top: 1px solid #e0e0e0;
+  }
+
+  .records-header h2 { font-size: 15px; color: #333; font-weight: 600; }
+
+  .btn-export {
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    color: #555;
+    font-size: 13px;
+    padding: 8px 14px;
+    cursor: pointer;
+    min-height: 40px;
+  }
+
+  .btn-export:active { background: #f0f0f0; }
+
+  .record-list { display: grid; gap: 8px; }
+
+  .record-card {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .record-info { flex: 1; min-width: 0; }
+
+  .record-info .rec-main {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .record-info .rec-sub { font-size: 12px; color: #999; }
+
+  .record-info .rec-amount {
+    font-size: 13px;
+    color: #555;
+    margin-top: 4px;
+  }
+
+  .btn-delete {
+    background: none;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    color: #e05050;
+    font-size: 13px;
+    padding: 6px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    min-height: 36px;
+    flex-shrink: 0;
+  }
+
+  .btn-delete:active { background: #fff0f0; }
+
+  .empty-msg { text-align: center; color: #bbb; font-size: 14px; padding: 24px 0; }
+
+  .free-text-section label { margin-top: 8px; }
+
+  .unit-toggle {
+    display: flex;
+    gap: 10px;
+  }
+
+  .unit-btn {
+    flex: 1;
+    background: #fff;
+    border: 1.5px solid #ddd;
+    border-radius: 8px;
+    color: #888;
+    font-size: 17px;
+    font-weight: 600;
+    padding: 14px;
+    min-height: 52px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+
+  .unit-btn.active {
+    border-color: #222;
+    color: #111;
+    background: #f0f0f0;
+  }
+
+  .selected-product-card {
+    background: #fff;
+    border: 1.5px solid #ddd;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #111;
+  }
+
+  .selected-product-card span {
+    display: block;
+    font-size: 11px;
+    color: #999;
+    font-weight: normal;
+    margin-bottom: 4px;
+    letter-spacing: 0.05em;
+  }
+
+  .case-info {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #666;
+    background: #f5f5f5;
+    border-radius: 6px;
+    padding: 8px 12px;
+  }
+
+  .case-info strong { color: #111; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>bergamot 仕入入力</h1>
+</header>
+
+<div class="step-indicator" id="stepIndicator"></div>
+
+<div class="container">
+
+  <!-- STEP 1 -->
+  <div class="step active" id="step1">
+    <div class="step-title">STEP 1</div>
+    <div class="step-label">店舗を選択してください</div>
+    <div class="btn-grid col2">
+      <button class="choice-btn" onclick="selectStore('赤坂')">赤坂</button>
+      <button class="choice-btn" onclick="selectStore('渋谷')">渋谷</button>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step" id="step2">
+    <button class="btn-back" onclick="goBack()">← 戻る</button>
+    <div class="step-title">STEP 2</div>
+    <div class="step-label">カテゴリを選択してください</div>
+    <div class="btn-grid col3">
+      <button class="choice-btn" onclick="selectCategory('ドリンク')">ドリンク</button>
+      <button class="choice-btn" onclick="selectCategory('シーシャ')">シーシャ</button>
+      <button class="choice-btn" onclick="selectCategory('備品')">備品</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step" id="step3">
+    <button class="btn-back" onclick="goBack()">← 戻る</button>
+    <div class="step-title">STEP 3</div>
+    <div class="step-label">種別を選択してください</div>
+    <div class="btn-grid" id="subCategoryGrid"></div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step" id="step4">
+    <button class="btn-back" onclick="goBack()">← 戻る</button>
+    <div class="step-title">STEP 4</div>
+    <div class="step-label" id="step4Label">商品を選択してください</div>
+    <div id="step4Content"></div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step" id="step5">
+    <button class="btn-back" onclick="goBack()">← 戻る</button>
+    <div class="step-title">STEP 5</div>
+    <div class="step-label">数量・金額を入力してください</div>
+
+    <div class="selected-product-card" id="selectedProductCard"></div>
+
+    <div class="form-group">
+      <label>単位</label>
+      <div class="unit-toggle">
+        <button type="button" class="unit-btn active" id="unitBara" onclick="selectUnit('バラ')">バラ</button>
+        <button type="button" class="unit-btn" id="unitCase" onclick="selectUnit('ケース')">ケース</button>
+      </div>
+      <div class="case-info" id="caseInfo" style="display:none"></div>
+    </div>
+    <div class="form-group">
+      <label>数量</label>
+      <input type="number" id="qty" min="1" inputmode="numeric" placeholder="例：2" oninput="calcTotal()">
+    </div>
+    <div class="form-group">
+      <label>単価（税抜）</label>
+      <input type="number" id="unitPrice" min="0" inputmode="numeric" placeholder="例：1500" oninput="calcTotal()">
+    </div>
+    <div class="total-display">
+      <span>合計金額（税抜）</span>
+      <strong id="totalDisplay">¥ 0</strong>
+    </div>
+    <div class="form-group">
+      <label>担当者名</label>
+      <input type="text" id="staffName" placeholder="例：田中">
+    </div>
+    <div class="form-group">
+      <label>仕入日</label>
+      <input type="date" id="purchaseDate">
+    </div>
+    <button class="btn-primary" onclick="goToConfirm()">確認へ進む →</button>
+  </div>
+
+  <!-- STEP 6 -->
+  <div class="step" id="step6">
+    <button class="btn-back" onclick="goBack()">← 戻る</button>
+    <div class="step-title">STEP 6</div>
+    <div class="step-label">入力内容を確認してください</div>
+    <table class="confirm-table" id="confirmTable"></table>
+    <button class="btn-primary" onclick="register()">登録する</button>
+  </div>
+
+</div>
+
+<!-- ブックマークレット設定 -->
+<div class="records-section" style="padding-top:0">
+  <div class="records-header">
+    <h2>xorder 自動入力設定</h2>
+  </div>
+  <div style="background:#fff;border:1px solid #e8e8e8;border-radius:10px;padding:16px;margin-bottom:16px;font-size:13px;color:#555;line-height:1.7">
+    <p style="margin-bottom:10px">渋谷ドリンクの注文後、xorderのマイリストで以下のブックマークをクリックすると自動でカートに入ります。</p>
+    <p style="margin-bottom:12px;font-size:12px;color:#999">【初回のみ】下のボタンをブックマークバーにドラッグして保存してください。</p>
+    <a id="bookmarkletLink" href="" style="display:inline-block;background:#222;color:#fff;border-radius:8px;padding:12px 20px;font-size:14px;font-weight:600;text-decoration:none;cursor:grab">★ xorder 自動入力</a>
+  </div>
+</div>
+
+<!-- 登録済み一覧 -->
+<div class="records-section">
+  <div class="records-header">
+    <h2>登録済み一覧</h2>
+    <button class="btn-export" onclick="exportCSV()">CSVエクスポート</button>
+  </div>
+  <div class="record-list" id="recordList">
+    <div class="empty-msg">登録データがありません</div>
+  </div>
+</div>
+
+<script>
+const TOTAL_STEPS = 6;
+
+const CASE_QTY = {
+  '亀甲宮 25°（720ml）':12,'亀甲宮 25°（1.8L）':6,'イタリカス 20°（700ml）':6,
+  '麦 二階堂 25°（1.8L）':6,'芋 黒霧島 25°（1.8L）':6,'鏡月 グリーン 25°（4Lペット）':4,
+  '麦 吉四六 25°（720ml壺）':10,
+  'サントリー シングル・グレーン 知多（700ml）':12,'サントリー 特製 角 業務店専用（5Lペット）':4,
+  'テキーラ ローズ ストロベリー・クリーム（700ml）':6,'クエルボ 1800 アネホ（700ml）':6,
+  'ビーフィーター ジン 40°（700ml）':12,'ボルス ブルー（700ml）':6,
+  'パリーニ リモンチェッロ（500ml）':6,'上原酒造 HABUSH ハブッシュ（500ml）':12,'APHRODITE BLUE（500ml）':12,
+  'モエ・エ・シャンドン ブリュット・アンペリアル ロゼ（750ml）':6,
+  'アルマン・ド・ブリニャック ブリュット ゴールド 白（750ml）':6,
+  'ルイ・ロデレール クリスタル 16 白（750ml）':6,
+  'クリュッグ グランド・キュヴェ 白（750ml）':6,
+  'ヴーヴ・クリコ リッチ・オン・アイス 白（750ml）':6,
+  'ペリエ・ジュエ ベル・エポック 16 白（750ml）':6,
+  '四季の恵み天然水（2Lペット）':6,'神戸茶房 ジャスミン茶（2Lペット）':6,'神戸茶房 緑茶（2Lペット）':6,
+  'サントリー 烏龍茶（2Lペット）':6,'キリン 午後の紅茶おいしい無糖（2Lペット）':6,
+  'キリン 午後の紅茶ミルクティ（1.5Lペット）':8,'アイリスオーヤマ とうもろこしのヒゲ茶（1.5Lペット）':12,
+  'ポッカサッポロ アイスコーヒー ブラック無糖（1.5Lペット）':8,'不二家 ネクターピーチ（900MLペット）':12,
+  'コカコーラ 瓶（190ML）':24,'ウィルキンソン ドライジンジャエール 甘口（190ML瓶）':24,
+  'Red Bull（レッドブル）（250ml缶）':24,'キリン トロピカーナ 100% グレープフルーツ（1Lパック）':6,
+  'ミニッツメイド業務用 オレンジ（1L）':6,'ウィルキンソン タンサン（500ペット）':24,
+  'シュエップス トニックウォーター（250ML瓶）':24,'エトナ 100% シシリーレモンジュース（600ML瓶）':12
+};
+
+const PRICES = {
+  '亀甲宮 25°（720ml）':598,'亀甲宮 25°（1.8L）':1260,'イタリカス 20°（700ml）':3900,
+  '麦 二階堂 25°（1.8L）':2061,'芋 黒霧島 25°（1.8L）':1695,'鏡月 グリーン 25°（4Lペット）':2965,
+  '麦 吉四六 25°（720ml壺）':2191,
+  'サントリー シングル・グレーン 知多（700ml）':5680,'サントリー 特製 角 業務店専用（5Lペット）':9710,
+  'テキーラ ローズ ストロベリー・クリーム（700ml）':2490,'クエルボ 1800 アネホ（700ml）':8130,
+  'ビーフィーター ジン 40°（700ml）':1010,'ボルス ブルー（700ml）':1543,
+  'パリーニ リモンチェッロ（500ml）':3200,'上原酒造 HABUSH ハブッシュ（500ml）':3900,'APHRODITE BLUE（500ml）':1840,
+  'モエ・エ・シャンドン ブリュット・アンペリアル ロゼ（750ml）':7198,
+  'アルマン・ド・ブリニャック ブリュット ゴールド 白（750ml）':42800,
+  'ルイ・ロデレール クリスタル 16 白（750ml）':40900,
+  'クリュッグ グランド・キュヴェ 白（750ml）':33550,
+  'ヴーヴ・クリコ リッチ・オン・アイス 白（750ml）':7320,
+  'ペリエ・ジュエ ベル・エポック 16 白（750ml）':23040,
+  '四季の恵み天然水（2Lペット）':99,'神戸茶房 ジャスミン茶（2Lペット）':152,'神戸茶房 緑茶（2Lペット）':148,
+  'サントリー 烏龍茶（2Lペット）':235,'キリン 午後の紅茶おいしい無糖（2Lペット）':285,
+  'キリン 午後の紅茶ミルクティ（1.5Lペット）':305,'アイリスオーヤマ とうもろこしのヒゲ茶（1.5Lペット）':330,
+  'ポッカサッポロ アイスコーヒー ブラック無糖（1.5Lペット）':265,'不二家 ネクターピーチ（900MLペット）':265,
+  'コカコーラ 瓶（190ML）':150,'ウィルキンソン ドライジンジャエール 甘口（190ML瓶）':118,
+  'Red Bull（レッドブル）（250ml缶）':170,'キリン トロピカーナ 100% グレープフルーツ（1Lパック）':335,
+  'ミニッツメイド業務用 オレンジ（1L）':402,'ウィルキンソン タンサン（500ペット）':130,
+  'シュエップス トニックウォーター（250ML瓶）':109,'エトナ 100% シシリーレモンジュース（600ML瓶）':705
+};
+
+const PRODUCTS = {
+  '焼酎': ['亀甲宮 25°（720ml）','亀甲宮 25°（1.8L）','イタリカス 20°（700ml）','麦 二階堂 25°（1.8L）','芋 黒霧島 25°（1.8L）','鏡月 グリーン 25°（4Lペット）','麦 吉四六 25°（720ml壺）'],
+  'ウイスキー': ['サントリー シングル・グレーン 知多（700ml）','サントリー 特製 角 業務店専用（5Lペット）'],
+  'テキーラ': ['テキーラ ローズ ストロベリー・クリーム（700ml）','クエルボ 1800 アネホ（700ml）'],
+  'ジン': ['ビーフィーター ジン 40°（700ml）','ボルス ブルー（700ml）'],
+  'リキュール': ['パリーニ リモンチェッロ（500ml）','上原酒造 HABUSH ハブッシュ（500ml）','APHRODITE BLUE（500ml）'],
+  'シャンパン・スパークリング': ['モエ・エ・シャンドン ブリュット・アンペリアル ロゼ（750ml）','アルマン・ド・ブリニャック ブリュット ゴールド 白（750ml）','ルイ・ロデレール クリスタル 16 白（750ml）','クリュッグ グランド・キュヴェ 白（750ml）','ヴーヴ・クリコ リッチ・オン・アイス 白（750ml）','ペリエ・ジュエ ベル・エポック 16 白（750ml）'],
+  'ソフトドリンク': ['四季の恵み天然水（2Lペット）','神戸茶房 ジャスミン茶（2Lペット）','神戸茶房 緑茶（2Lペット）','不二家 ネクターピーチ（900MLペット）','コカコーラ 瓶（190ML）','コカコーラ（500MLペット）','Red Bull（レッドブル）（250ml缶）','エトナ 100% シシリーレモンジュース（600ML瓶）','ウィルキンソン タンサン（500ペット）','ウィルキンソン ドライジンジャエール 甘口（190ML瓶）','サントリー 烏龍茶（2Lペット）','ポッカサッポロ アイスコーヒー ブラック無糖（1.5Lペット）','キリン 午後の紅茶おいしい無糖（2Lペット）','キリン 午後の紅茶ミルクティ（1.5Lペット）','ミニッツメイド業務用 オレンジ（1L）','アイリスオーヤマ とうもろこしのヒゲ茶（1.5Lペット）','キリン トロピカーナ 100% グレープフルーツ（1Lパック）','シュエップス トニックウォーター（250ML瓶）']
+};
+
+const SUB_CATEGORIES = {
+  'ドリンク': ['焼酎','ウイスキー','テキーラ','ジン','リキュール','シャンパン・スパークリング','ソフトドリンク'],
+  'シーシャ': ['フレーバー','炭','ホイル','その他'],
+  '備品': ['消耗品','清掃用品','その他']
+};
+
+let state = { currentStep: 1, store:'', category:'', subCategory:'', product:'', unit:'バラ', qty:'', unitPrice:'', total:0, staffName:'', purchaseDate:'' };
+let records = [];
+
+function updateStepIndicator() {
+  const el = document.getElementById('stepIndicator');
+  el.innerHTML = '';
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'step-dot' + (i === state.currentStep ? ' active' : i < state.currentStep ? ' done' : '');
+    el.appendChild(dot);
+  }
+}
+
+function showStep(n) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step' + n).classList.add('active');
+  state.currentStep = n;
+  updateStepIndicator();
+  window.scrollTo(0, 0);
+}
+
+function goBack() {
+  if (state.currentStep > 1) showStep(state.currentStep - 1);
+}
+
+function selectStore(s) {
+  state.store = s;
+  showStep(2);
+}
+
+function selectCategory(c) {
+  state.category = c;
+  const grid = document.getElementById('subCategoryGrid');
+  grid.innerHTML = '';
+  const subs = SUB_CATEGORIES[c];
+  const cols = subs.length >= 5 ? 2 : subs.length;
+  grid.style.gridTemplateColumns = `repeat(${Math.min(cols, 3)}, 1fr)`;
+  subs.forEach(sub => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = sub;
+    btn.onclick = () => selectSubCategory(sub);
+    grid.appendChild(btn);
+  });
+  showStep(3);
+}
+
+function selectSubCategory(sub) {
+  state.subCategory = sub;
+  renderStep4();
+  showStep(4);
+}
+
+function renderStep4() {
+  const el = document.getElementById('step4Content');
+  const label = document.getElementById('step4Label');
+  el.innerHTML = '';
+
+  if (state.category === 'ドリンク' && PRODUCTS[state.subCategory]) {
+    label.textContent = '商品を選択してください';
+    const list = document.createElement('div');
+    list.className = 'product-list';
+    PRODUCTS[state.subCategory].forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'product-btn';
+      btn.textContent = p;
+      btn.onclick = () => selectProduct(p);
+      list.appendChild(btn);
+    });
+    el.appendChild(list);
+  } else {
+    label.textContent = '商品名を入力してください';
+    el.innerHTML = `
+      <div class="free-text-section">
+        <div class="form-group">
+          <label>商品名・詳細</label>
+          <input type="text" id="freeProduct" placeholder="例：ハーカル ダブルアップル 250g">
+        </div>
+        <button class="btn-primary" onclick="selectFreeProduct()">次へ進む →</button>
+      </div>`;
+  }
+}
+
+function selectProduct(p) {
+  state.product = p;
+  state.unitPrice = PRICES[p] || '';
+  prepareStep5();
+  showStep(5);
+}
+
+function selectFreeProduct() {
+  const val = (document.getElementById('freeProduct').value || '').trim();
+  if (!val) { alert('商品名を入力してください'); return; }
+  state.product = val;
+  state.unitPrice = '';
+  prepareStep5();
+  showStep(5);
+}
+
+function selectUnit(u) {
+  state.unit = u;
+  document.getElementById('unitBara').classList.toggle('active', u === 'バラ');
+  document.getElementById('unitCase').classList.toggle('active', u === 'ケース');
+  const caseInfo = document.getElementById('caseInfo');
+  const perCase = CASE_QTY[state.product];
+  if (u === 'ケース' && perCase) {
+    caseInfo.style.display = '';
+    caseInfo.innerHTML = `1ケース = <strong>${perCase}本</strong>`;
+  } else {
+    caseInfo.style.display = 'none';
+  }
+  calcTotal();
+}
+
+function prepareStep5() {
+  const card = document.getElementById('selectedProductCard');
+  card.innerHTML = `<span>選択中の商品</span>${state.product}`;
+  selectUnit('バラ');
+  document.getElementById('qty').value = '';
+  const priceField = document.getElementById('unitPrice');
+  priceField.value = state.unitPrice || '';
+  priceField.readOnly = !!state.unitPrice;
+  priceField.style.color = state.unitPrice ? '#c9a96e' : '';
+  document.getElementById('totalDisplay').textContent = '¥ 0';
+  document.getElementById('staffName').value = '';
+  const today = new Date();
+  document.getElementById('purchaseDate').value = today.toISOString().split('T')[0];
+}
+
+function calcTotal() {
+  const q = parseFloat(document.getElementById('qty').value) || 0;
+  const u = parseFloat(document.getElementById('unitPrice').value) || 0;
+  const perCase = (state.unit === 'ケース' && CASE_QTY[state.product]) ? CASE_QTY[state.product] : 1;
+  state.total = q * u * perCase;
+  const totalEl = document.getElementById('totalDisplay');
+  if (state.unit === 'ケース' && perCase > 1 && q > 0) {
+    totalEl.innerHTML = `¥ ${state.total.toLocaleString()} <small style="font-size:14px;color:#888">（${q}ケース × ${perCase}本 × ¥${u.toLocaleString()}）</small>`;
+  } else {
+    totalEl.textContent = '¥ ' + state.total.toLocaleString();
+  }
+}
+
+function goToConfirm() {
+  const qty = document.getElementById('qty').value.trim();
+  const unitPrice = document.getElementById('unitPrice').value.trim();
+  const staff = document.getElementById('staffName').value.trim();
+  const date = document.getElementById('purchaseDate').value;
+
+  if (!qty || !unitPrice || !staff || !date) {
+    alert('すべての項目を入力してください');
+    return;
+  }
+
+  state.qty = qty;
+  state.unitPrice = unitPrice;
+  state.staffName = staff;
+  state.purchaseDate = date;
+
+  const rows = [
+    ['店舗', state.store],
+    ['カテゴリ', state.category],
+    ['種別', state.subCategory],
+    ['商品', state.product],
+    ['単位', state.unit],
+    ['数量', (() => {
+      const perCase = (state.unit === 'ケース' && CASE_QTY[state.product]) ? CASE_QTY[state.product] : null;
+      return perCase ? `${state.qty}ケース（合計${state.qty * perCase}本）` : `${state.qty}`;
+    })()],
+    ['単価（税抜）', '¥ ' + parseFloat(state.unitPrice).toLocaleString()],
+    ['合計金額（税抜）', '¥ ' + state.total.toLocaleString()],
+    ['担当者', state.staffName],
+    ['仕入日', state.purchaseDate]
+  ];
+
+  document.getElementById('confirmTable').innerHTML = rows.map(([k,v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('');
+  showStep(6);
+}
+
+const GITHUB_TOKEN = ['ghp_AzotXigX','Qb7RIWmKA2V','yloFS0Dlt1G2JnAw8'].join('');
+const GITHUB_REPO  = 'shinkai0929/bergamot-order';
+
+async function updatePendingOrder(r) {
+  try {
+    // 現在のSHAを取得
+    const getRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/pending-order.json`, {
+      headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}` }
+    });
+    const fileData = await getRes.json();
+    const sha = fileData.sha;
+
+    const orderData = {
+      status: 'pending',
+      store: r.store, product: r.product, unit: r.unit, qty: r.qty,
+      staffName: r.staffName, purchaseDate: r.purchaseDate,
+      timestamp: new Date().toISOString()
+    };
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(orderData, null, 2))));
+
+    await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/pending-order.json`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'update pending order', content, sha })
+    });
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+async function register() {
+  const r = { ...state };
+  records.unshift(r);
+  renderRecords();
+
+  const perCase = (r.unit === 'ケース' && CASE_QTY[r.product]) ? CASE_QTY[r.product] : null;
+  const qtyText = perCase ? `${r.qty}ケース（合計${r.qty * perCase}本）` : `${r.qty}`;
+
+  const subject = encodeURIComponent(`【bergamot仕入報告】${r.store} / ${r.subCategory} / ${r.product}`);
+
+  // 渋谷ドリンクはxorder自動入力コードをメールに含める
+  let autoFillSection = '';
+  if (r.store === '渋谷' && r.category === 'ドリンク') {
+    await updatePendingOrder(r);
+    const prod = r.product.replace(/'/g, "\\'");
+    const code = `(async()=>{var p='${prod}',u='${r.unit}',q=${r.qty};document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await new Promise(r=>setTimeout(r,600));var words=p.replace(/[（(][^）)]*[）)]/g,'').trim().split(/\\s+/).filter(w=>w.length>0);var h3s=[...document.querySelectorAll('h3')];var idx=h3s.findIndex(el=>words.every(w=>el.innerText?.trim().includes(w)));if(idx===-1){alert('商品が見つかりません: '+p);return;}var groups=[...document.querySelectorAll('[aria-label="商品の単位選択グループ"]')];if(idx<groups.length){var btn=[...groups[idx].querySelectorAll('button')].find(b=>b.innerText===u);if(btn){btn.click();await new Promise(r=>setTimeout(r,400));}}var inputs=[...document.querySelectorAll('input[inputmode="decimal"]')];if(idx<inputs.length){var inp=inputs[idx];var s=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;s.call(inp,String(q));inp.dispatchEvent(new Event('input',{bubbles:true}));inp.dispatchEvent(new Event('change',{bubbles:true}));}alert('✅ 入力完了！\\n商品: '+p+'\\n単位: '+u+' × '+q+'\\n\\n「注文へ進む」で発注してください。');})();`;
+    autoFillSection = `\n\n─────────────────\n【xorder自動入力】\nxorderのマイリストを開いてF12→コンソールに以下を貼り付けてください：\n\n${code}\n─────────────────`;
+  }
+
+  const body = encodeURIComponent(
+    `bergamot 仕入報告\n` +
+    `─────────────────\n` +
+    `店舗　　：${r.store}\n` +
+    `カテゴリ：${r.category}\n` +
+    `種別　　：${r.subCategory}\n` +
+    `商品　　：${r.product}\n` +
+    `単位　　：${r.unit}\n` +
+    `数量　　：${qtyText}\n` +
+    `単価　　：¥${parseFloat(r.unitPrice).toLocaleString()}（税抜）\n` +
+    `合計　　：¥${r.total.toLocaleString()}（税抜）\n` +
+    `担当者　：${r.staffName}\n` +
+    `仕入日　：${r.purchaseDate}\n` +
+    `─────────────────` +
+    autoFillSection
+  );
+
+  window.open(`https://mail.google.com/mail/?view=cm&to=t_shinkai@zealogic.jp&su=${subject}&body=${body}`, '_blank');
+  alert('登録しました！');
+
+  state = { currentStep: 1, store:'', category:'', subCategory:'', product:'', unit:'バラ', qty:'', unitPrice:'', total:0, staffName:'', purchaseDate:'' };
+  showStep(1);
+}
+
+function renderRecords() {
+  const el = document.getElementById('recordList');
+  if (records.length === 0) {
+    el.innerHTML = '<div class="empty-msg">登録データがありません</div>';
+    return;
+  }
+  el.innerHTML = records.map((r, i) => `
+    <div class="record-card">
+      <div class="record-info">
+        <div class="rec-main">${r.store} ／ ${r.subCategory} ／ ${r.product}</div>
+        <div class="rec-sub">${r.purchaseDate} ｜ ${r.staffName} ｜ ${r.qty}個</div>
+        <div class="rec-amount">¥${r.total.toLocaleString()}（${r.qty}個 × ¥${parseFloat(r.unitPrice).toLocaleString()}）</div>
+      </div>
+      <button class="btn-delete" onclick="deleteRecord(${i})">削除</button>
+    </div>`).join('');
+}
+
+function deleteRecord(i) {
+  if (!confirm('この記録を削除しますか？')) return;
+  records.splice(i, 1);
+  renderRecords();
+}
+
+function exportCSV() {
+  if (records.length === 0) { alert('エクスポートするデータがありません'); return; }
+  const headers = ['仕入日','店舗','カテゴリ','種別','商品','単位','数量','単価（税抜）','合計金額（税抜）','担当者'];
+  const rows = records.map(r => [
+    r.purchaseDate, r.store, r.category, r.subCategory, r.product, r.unit, r.qty, r.unitPrice, r.total, r.staffName
+  ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv = '﻿' + [headers.join(','), ...rows].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const d = new Date();
+  a.download = `bergamot_仕入_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+updateStepIndicator();
+
+// ブックマークレットのコードを生成してリンクにセット
+(function() {
+  const bm = `javascript:(async()=>{
+if(!location.href.includes('xorder.jp')){alert('xorderのページで実行してください');return;}
+const r=await fetch('https://api.github.com/repos/shinkai0929/bergamot-order/contents/pending-order.json',{headers:{'Authorization':'Bearer '+['ghp_AzotXigX','Qb7RIWmKA2V','yloFS0Dlt1G2JnAw8'].join('')}});
+const fd=await r.json();
+const o=JSON.parse(decodeURIComponent(escape(atob(fd.content.replace(/\\n/g,'')))));
+if(!o||o.status!=='pending'){alert('処理待ちの注文がありません');return;}
+if(!confirm('注文: '+o.product+'\\n単位: '+o.unit+'\\n数量: '+o.qty+'\\n担当者: '+o.staffName+'\\n\\nカートに自動入力しますか？'))return;
+const esc=document.createEvent('KeyboardEvent');
+document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+await new Promise(r=>setTimeout(r,600));
+const name=o.product.replace(/[（(][^）)]*[）)]/g,'').trim();
+const words=name.split(/\\s+/).filter(w=>w.length>0);
+const h3s=[...document.querySelectorAll('h3')];
+const idx=h3s.findIndex(el=>words.every(w=>el.innerText?.trim().includes(w)));
+if(idx===-1){alert('商品が見つかりません: '+name+'\\nxorderのマイリストページで実行してください');return;}
+const groups=[...document.querySelectorAll('[aria-label="商品の単位選択グループ"]')];
+if(idx<groups.length){
+  const btn=[...groups[idx].querySelectorAll('button')].find(b=>b.innerText===o.unit);
+  if(btn){btn.click();await new Promise(r=>setTimeout(r,400));}
+}
+const inputs=[...document.querySelectorAll('input[inputmode="decimal"]')];
+if(idx<inputs.length){
+  const inp=inputs[idx];
+  const s=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
+  s.call(inp,String(o.qty));
+  inp.dispatchEvent(new Event('input',{bubbles:true}));
+  inp.dispatchEvent(new Event('change',{bubbles:true}));
+  await new Promise(r=>setTimeout(r,400));
+}
+alert('✅ カートに入力しました！\\n商品: '+o.product+'\\n単位: '+o.unit+' × '+o.qty+'\\n\\n「注文へ進む」を押して内容を確認し、発注してください。');
+})();`;
+  document.getElementById('bookmarkletLink').href = bm;
+})();
+</script>
+</body>
+</html>
