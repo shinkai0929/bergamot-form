@@ -491,7 +491,10 @@
 <div class="records-section">
   <div class="records-header">
     <h2>登録済み一覧</h2>
-    <button class="btn-export" onclick="exportCSV()">CSVエクスポート</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn-export" onclick="sendBatchEmail()" id="sendBtn" style="background:#222;color:#fff;border-color:#222">📨 まとめて送信</button>
+      <button class="btn-export" onclick="exportCSV()">CSV</button>
+    </div>
   </div>
   <div class="record-list" id="recordList">
     <div class="empty-msg">登録データがありません</div>
@@ -776,45 +779,60 @@ async function updatePendingOrder(r) {
 
 async function register() {
   const r = { ...state };
+  r.sent = false;
   records.unshift(r);
   renderRecords();
 
-  const perCase = (r.unit === 'ケース' && CASE_QTY[r.product]) ? CASE_QTY[r.product] : null;
-  const qtyText = perCase ? `${r.qty}ケース（合計${r.qty * perCase}本）` : `${r.qty}`;
-
-  const subject = encodeURIComponent(`【bergamot仕入報告】${r.store} / ${r.subCategory} / ${r.product}`);
-
-  // 渋谷ドリンクはxorder自動入力コードをメールに含める
-  let autoFillSection = '';
+  // 渋谷ドリンクはpending-order.jsonも更新
   if (r.store === '渋谷' && r.category === 'ドリンク') {
     await updatePendingOrder(r);
-    const prod = r.product.replace(/'/g, "\\'");
-    const code = `(async()=>{var p='${prod}',u='${r.unit}',q=${r.qty};document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await new Promise(r=>setTimeout(r,600));var words=p.replace(/[（(][^）)]*[）)]/g,'').trim().split(/\\s+/).filter(w=>w.length>0);var h3s=[...document.querySelectorAll('h3')];var idx=h3s.findIndex(el=>words.every(w=>el.innerText?.trim().includes(w)));if(idx===-1){alert('商品が見つかりません: '+p);return;}var groups=[...document.querySelectorAll('[aria-label="商品の単位選択グループ"]')];if(idx<groups.length){var btn=[...groups[idx].querySelectorAll('button')].find(b=>b.innerText===u);if(btn){btn.click();await new Promise(r=>setTimeout(r,400));}}var inputs=[...document.querySelectorAll('input[inputmode="decimal"]')];if(idx<inputs.length){var inp=inputs[idx];var s=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;s.call(inp,String(q));inp.dispatchEvent(new Event('input',{bubbles:true}));inp.dispatchEvent(new Event('change',{bubbles:true}));}alert('✅ 入力完了！\\n商品: '+p+'\\n単位: '+u+' × '+q+'\\n\\n「注文へ進む」で発注してください。');})();`;
-    autoFillSection = `\n\n─────────────────\n【xorder自動入力】\nxorderのマイリストを開いてF12→コンソールに以下を貼り付けてください：\n\n${code}\n─────────────────`;
   }
 
-  const body = encodeURIComponent(
-    `bergamot 仕入報告\n` +
-    `─────────────────\n` +
-    `店舗　　：${r.store}\n` +
-    `カテゴリ：${r.category}\n` +
-    `種別　　：${r.subCategory}\n` +
-    `商品　　：${r.product}\n` +
-    `単位　　：${r.unit}\n` +
-    `数量　　：${qtyText}\n` +
-    `単価　　：¥${parseFloat(r.unitPrice).toLocaleString()}（税抜）\n` +
-    `合計　　：¥${r.total.toLocaleString()}（税抜）\n` +
-    `担当者　：${r.staffName}\n` +
-    `仕入日　：${r.purchaseDate}\n` +
-    `─────────────────` +
-    autoFillSection
-  );
-
-  window.open(`https://mail.google.com/mail/?view=cm&to=t_shinkai@zealogic.jp&su=${subject}&body=${body}`, '_blank');
-  alert('登録しました！');
-
+  alert('登録しました！\n続けて登録するか、「まとめて送信」でメールを送ってください。');
   state = { currentStep: 1, store:'', category:'', subCategory:'', product:'', unit:'バラ', qty:'', unitPrice:'', total:0, staffName:'', purchaseDate:'' };
   showStep(1);
+}
+
+async function sendBatchEmail() {
+  const unsent = records.filter(r => !r.sent);
+  if (unsent.length === 0) { alert('送信する登録がありません'); return; }
+
+  const store = unsent[0].store;
+  const date  = unsent[0].purchaseDate;
+  const staff = unsent[0].staffName;
+
+  const subject = encodeURIComponent(`【bergamot仕入報告】${store} / ${date} / ${unsent.length}件`);
+
+  let lines = `bergamot 仕入報告\n店舗：${store} ／ 担当：${staff} ／ 仕入日：${date}\n${'─'.repeat(24)}\n`;
+  let total = 0;
+
+  unsent.forEach((r, i) => {
+    const perCase = (r.unit === 'ケース' && CASE_QTY[r.product]) ? CASE_QTY[r.product] : null;
+    const qtyText = perCase ? `${r.qty}ケース（${r.qty * perCase}本）` : `${r.qty}`;
+    lines += `\n【${i+1}】${r.subCategory} / ${r.product}\n`;
+    lines += `    単位：${r.unit}　数量：${qtyText}\n`;
+    lines += `    単価：¥${parseFloat(r.unitPrice).toLocaleString()}　小計：¥${r.total.toLocaleString()}\n`;
+    total += r.total;
+  });
+
+  lines += `\n${'─'.repeat(24)}\n合計金額（税抜）：¥${total.toLocaleString()}\n`;
+
+  // 渋谷ドリンクのxorder自動入力コードを追加
+  const xorderItems = unsent.filter(r => r.store === '渋谷' && r.category === 'ドリンク');
+  if (xorderItems.length > 0) {
+    lines += `\n${'─'.repeat(24)}\n【xorder自動入力】\nxorderのマイリストを開いてF12→コンソールに貼り付けてください：\n\n`;
+    xorderItems.forEach(r => {
+      const prod = r.product.replace(/'/g, "\\'");
+      lines += `// ${r.product} ${r.unit} ${r.qty}\n`;
+      lines += `(async()=>{var p='${prod}',u='${r.unit}',q=${r.qty};document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await new Promise(r=>setTimeout(r,600));var words=p.replace(/[（(][^）)]*[）)]/g,'').trim().split(/\\s+/).filter(w=>w.length>0);var h3s=[...document.querySelectorAll('h3')];var idx=h3s.findIndex(el=>words.every(w=>el.innerText?.trim().includes(w)));if(idx===-1){alert('商品が見つかりません');return;}var groups=[...document.querySelectorAll('[aria-label="商品の単位選択グループ"]')];if(idx<groups.length){var btn=[...groups[idx].querySelectorAll('button')].find(b=>b.innerText===u);if(btn){btn.click();await new Promise(r=>setTimeout(r,400));}}var inputs=[...document.querySelectorAll('input[inputmode="decimal"]')];if(idx<inputs.length){var inp=inputs[idx];var s=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;s.call(inp,String(q));inp.dispatchEvent(new Event('input',{bubbles:true}));inp.dispatchEvent(new Event('change',{bubbles:true}));}alert('✅ '+p+' 入力完了');})();\n\n`;
+    });
+  }
+
+  window.open(`https://mail.google.com/mail/?view=cm&to=t_shinkai@zealogic.jp&su=${subject}&body=${encodeURIComponent(lines)}`, '_blank');
+
+  // 送信済みにマーク
+  records.forEach(r => { if (!r.sent) r.sent = true; });
+  renderRecords();
 }
 
 function renderRecords() {
@@ -823,11 +841,15 @@ function renderRecords() {
     el.innerHTML = '<div class="empty-msg">登録データがありません</div>';
     return;
   }
+  const unsent = records.filter(r => !r.sent).length;
+  const sendBtn = document.getElementById('sendBtn');
+  if (sendBtn) sendBtn.textContent = unsent > 0 ? `📨 まとめて送信（${unsent}件）` : '📨 まとめて送信';
+
   el.innerHTML = records.map((r, i) => `
-    <div class="record-card">
+    <div class="record-card" style="${r.sent ? 'opacity:0.5' : ''}">
       <div class="record-info">
-        <div class="rec-main">${r.store} ／ ${r.subCategory} ／ ${r.product}</div>
-        <div class="rec-sub">${r.purchaseDate} ｜ ${r.staffName} ｜ ${r.qty}個</div>
+        <div class="rec-main">${r.sent ? '✅ ' : ''}${r.store} ／ ${r.subCategory} ／ ${r.product}</div>
+        <div class="rec-sub">${r.purchaseDate} ｜ ${r.staffName} ｜ ${r.unit} ${r.qty}個</div>
         <div class="rec-amount">¥${r.total.toLocaleString()}（${r.qty}個 × ¥${parseFloat(r.unitPrice).toLocaleString()}）</div>
       </div>
       <button class="btn-delete" onclick="deleteRecord(${i})">削除</button>
