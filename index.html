@@ -828,15 +828,27 @@ async function sendBatchEmail() {
 var items=${itemsJson};
 async function fill(p,u,q){
   var words=p.replace(/[（(][^）)]*[）)]/g,'').trim().split(/\\s+/).filter(w=>w.length>0);
-  var h3s=[...document.querySelectorAll('h3')];
-  var idx=h3s.findIndex(el=>words.every(w=>el.innerText?.trim().includes(w)));
-  if(idx===-1){alert('商品が見つかりません: '+p);return;}
   var groups=[...document.querySelectorAll('[aria-label="商品の単位選択グループ"]')];
-  if(idx<groups.length){var btn=[...groups[idx].querySelectorAll('button')].find(b=>b.innerText===u);if(btn){btn.click();await new Promise(r=>setTimeout(r,400));}}
-  var inputs=[...document.querySelectorAll('input[inputmode="decimal"]')];
-  if(idx<inputs.length){var inp=inputs[idx];var s=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;s.call(inp,String(q));inp.dispatchEvent(new Event('input',{bubbles:true}));inp.dispatchEvent(new Event('change',{bubbles:true}));}
-  console.log('✅ '+p+' '+u+' '+q+'個 入力完了');
-  await new Promise(r=>setTimeout(r,600));
+  var targetGroup=null;
+  for(var i=0;i<groups.length;i++){
+    var el=groups[i];
+    for(var j=0;j<12;j++){
+      el=el.parentElement;
+      if(!el)break;
+      var h3=el.querySelector('h3');
+      if(h3&&words.every(w=>h3.innerText?.includes(w))){targetGroup=groups[i];break;}
+    }
+    if(targetGroup)break;
+  }
+  if(!targetGroup){alert('商品が見つかりません: '+p);return;}
+  var btn=[...targetGroup.querySelectorAll('button')].find(b=>b.innerText===u);
+  if(btn){btn.click();await new Promise(r=>setTimeout(r,500));}
+  var par=targetGroup.parentElement?.parentElement;
+  var inp=par?.querySelector('input[inputmode="decimal"]');
+  if(!inp){var all=[...document.querySelectorAll('input[inputmode="decimal"]')];var gi=[...document.querySelectorAll('[aria-label="商品の単位選択グループ"]')].indexOf(targetGroup);if(gi>=0&&gi<all.length)inp=all[gi];}
+  if(inp){var s=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;s.call(inp,String(q));inp.dispatchEvent(new Event('input',{bubbles:true}));inp.dispatchEvent(new Event('change',{bubbles:true}));}
+  console.log('✅ '+p+' 完了');
+  await new Promise(r=>setTimeout(r,800));
 }
 document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
 await new Promise(r=>setTimeout(r,800));
