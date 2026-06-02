@@ -818,15 +818,32 @@ async function sendBatchEmail() {
 
   lines += `\n${'─'.repeat(24)}\n合計金額（税抜）：¥${total.toLocaleString()}\n`;
 
-  // 渋谷ドリンクのxorder自動入力コードを追加
+  // 渋谷ドリンクのxorder自動入力コード（全件を1つのコードにまとめて順番に実行）
   const xorderItems = unsent.filter(r => r.store === '渋谷' && r.category === 'ドリンク');
   if (xorderItems.length > 0) {
-    lines += `\n${'─'.repeat(24)}\n【xorder自動入力】\nxorderのマイリストを開いてF12→コンソールに貼り付けてください：\n\n`;
-    xorderItems.forEach(r => {
-      const prod = r.product.replace(/'/g, "\\'");
-      lines += `// ${r.product} ${r.unit} ${r.qty}\n`;
-      lines += `(async()=>{var p='${prod}',u='${r.unit}',q=${r.qty};document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await new Promise(r=>setTimeout(r,600));var words=p.replace(/[（(][^）)]*[）)]/g,'').trim().split(/\\s+/).filter(w=>w.length>0);var h3s=[...document.querySelectorAll('h3')];var idx=h3s.findIndex(el=>words.every(w=>el.innerText?.trim().includes(w)));if(idx===-1){alert('商品が見つかりません');return;}var groups=[...document.querySelectorAll('[aria-label="商品の単位選択グループ"]')];if(idx<groups.length){var btn=[...groups[idx].querySelectorAll('button')].find(b=>b.innerText===u);if(btn){btn.click();await new Promise(r=>setTimeout(r,400));}}var inputs=[...document.querySelectorAll('input[inputmode="decimal"]')];if(idx<inputs.length){var inp=inputs[idx];var s=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;s.call(inp,String(q));inp.dispatchEvent(new Event('input',{bubbles:true}));inp.dispatchEvent(new Event('change',{bubbles:true}));}alert('✅ '+p+' 入力完了');})();\n\n`;
-    });
+    lines += `\n${'─'.repeat(24)}\n【xorder自動入力】\nxorderのマイリストを開いてF12→コンソールに以下を1回貼り付けてください：\n\n`;
+
+    const itemsJson = JSON.stringify(xorderItems.map(r => ({p: r.product, u: r.unit, q: parseInt(r.qty)})));
+    const code = `(async()=>{
+var items=${itemsJson};
+async function fill(p,u,q){
+  var words=p.replace(/[（(][^）)]*[）)]/g,'').trim().split(/\\s+/).filter(w=>w.length>0);
+  var h3s=[...document.querySelectorAll('h3')];
+  var idx=h3s.findIndex(el=>words.every(w=>el.innerText?.trim().includes(w)));
+  if(idx===-1){alert('商品が見つかりません: '+p);return;}
+  var groups=[...document.querySelectorAll('[aria-label="商品の単位選択グループ"]')];
+  if(idx<groups.length){var btn=[...groups[idx].querySelectorAll('button')].find(b=>b.innerText===u);if(btn){btn.click();await new Promise(r=>setTimeout(r,400));}}
+  var inputs=[...document.querySelectorAll('input[inputmode="decimal"]')];
+  if(idx<inputs.length){var inp=inputs[idx];var s=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;s.call(inp,String(q));inp.dispatchEvent(new Event('input',{bubbles:true}));inp.dispatchEvent(new Event('change',{bubbles:true}));}
+  console.log('✅ '+p+' '+u+' '+q+'個 入力完了');
+  await new Promise(r=>setTimeout(r,600));
+}
+document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+await new Promise(r=>setTimeout(r,800));
+for(var i=0;i<items.length;i++){await fill(items[i].p,items[i].u,items[i].q);}
+alert('✅ 全${xorderItems.length}件の入力が完了しました！\\n「注文へ進む」で発注してください。');
+})();`.replace(/\n/g,' ');
+    lines += code + '\n';
   }
 
   window.open(`https://mail.google.com/mail/?view=cm&to=t_shinkai@zealogic.jp&su=${subject}&body=${encodeURIComponent(lines)}`, '_blank');
