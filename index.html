@@ -826,34 +826,33 @@ async function sendBatchEmail() {
     const itemsJson = JSON.stringify(xorderItems.map(r => ({p: r.product, u: r.unit, q: parseInt(r.qty)})));
     const code = `(async()=>{
 var items=${itemsJson};
+async function wait(ms){return new Promise(r=>setTimeout(r,ms));}
 async function fill(p,u,q){
   var words=p.replace(/[（(][^）)]*[）)]/g,'').trim().split(/\\s+/).filter(w=>w.length>0);
+  var h3s=[...document.querySelectorAll('h3')];
+  var idx=h3s.findIndex(el=>words.every(w=>el.innerText?.includes(w)));
+  if(idx===-1){alert('見つかりません: '+p);return false;}
   var groups=[...document.querySelectorAll('[aria-label="商品の単位選択グループ"]')];
-  var targetGroup=null;
-  for(var i=0;i<groups.length;i++){
-    var el=groups[i];
-    for(var j=0;j<12;j++){
-      el=el.parentElement;
-      if(!el)break;
-      var h3=el.querySelector('h3');
-      if(h3&&words.every(w=>h3.innerText?.includes(w))){targetGroup=groups[i];break;}
-    }
-    if(targetGroup)break;
+  var inputs=[...document.querySelectorAll('input[inputmode="decimal"]')];
+  var plusBtns=[...document.querySelectorAll('[aria-label="数量を増やす"]')];
+  if(idx>=groups.length){alert('グループ不一致: '+p);return false;}
+  var unitBtn=[...groups[idx].querySelectorAll('button')].find(b=>b.innerText===u);
+  if(unitBtn){unitBtn.click();await wait(600);}
+  if(idx<plusBtns.length){
+    for(var k=0;k<q;k++){plusBtns[idx].click();await wait(150);}
+  } else if(idx<inputs.length){
+    var inp=inputs[idx];
+    var sv=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
+    sv.call(inp,String(q));inp.dispatchEvent(new Event('input',{bubbles:true}));inp.dispatchEvent(new Event('change',{bubbles:true}));
   }
-  if(!targetGroup){alert('商品が見つかりません: '+p);return;}
-  var btn=[...targetGroup.querySelectorAll('button')].find(b=>b.innerText===u);
-  if(btn){btn.click();await new Promise(r=>setTimeout(r,500));}
-  var par=targetGroup.parentElement?.parentElement;
-  var inp=par?.querySelector('input[inputmode="decimal"]');
-  if(!inp){var all=[...document.querySelectorAll('input[inputmode="decimal"]')];var gi=[...document.querySelectorAll('[aria-label="商品の単位選択グループ"]')].indexOf(targetGroup);if(gi>=0&&gi<all.length)inp=all[gi];}
-  if(inp){var s=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;s.call(inp,String(q));inp.dispatchEvent(new Event('input',{bubbles:true}));inp.dispatchEvent(new Event('change',{bubbles:true}));}
-  console.log('✅ '+p+' 完了');
-  await new Promise(r=>setTimeout(r,800));
+  await wait(500);
+  return true;
 }
 document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
-await new Promise(r=>setTimeout(r,800));
-for(var i=0;i<items.length;i++){await fill(items[i].p,items[i].u,items[i].q);}
-alert('✅ 全${xorderItems.length}件の入力が完了しました！\\n「注文へ進む」で発注してください。');
+await wait(1000);
+var ok=0;
+for(var i=0;i<items.length;i++){if(await fill(items[i].p,items[i].u,items[i].q))ok++;}
+alert('✅ '+ok+'/'+items.length+'件 入力完了！\\n「注文へ進む」で発注してください。');
 })();`.replace(/\n/g,' ');
     lines += code + '\n';
   }
