@@ -789,8 +789,9 @@ async function register() {
   }
 
   alert('登録しました！\n続けて登録するか、「まとめて送信」でメールを送ってください。');
-  state = { currentStep: 1, store:'', category:'', subCategory:'', product:'', unit:'バラ', qty:'', unitPrice:'', total:0, staffName:'', purchaseDate:'' };
-  showStep(1);
+  const currentStore = state.store;
+  state = { currentStep: 2, store: currentStore, category:'', subCategory:'', product:'', unit:'バラ', qty:'', unitPrice:'', total:0, staffName:'', purchaseDate:'' };
+  showStep(2);
 }
 
 async function sendBatchEmail() {
